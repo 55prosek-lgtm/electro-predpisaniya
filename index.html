@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ЭлектроПодряд</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 20px 16px 30px;
+      background: #0b1020;
+      color: #f4f7ff;
+      font-family: Arial, sans-serif;
+    }
+
+    .app { max-width: 520px; margin: auto; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .logo { font-size: 21px; font-weight: 800; }
+    .logo span { color: #53e0c0; }
+
+    .badge {
+      background: #1c2940;
+      color: #53e0c0;
+      padding: 8px 11px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .welcome {
+      background: linear-gradient(135deg, #243f78, #542c78);
+      padding: 23px;
+      border-radius: 22px;
+      margin-bottom: 24px;
+    }
+
+    .welcome h1 { margin: 0 0 9px; font-size: 24px; }
+    .welcome p { margin: 0; color: #d4ddf6; line-height: 1.5; }
+
+    .section-title {
+      font-size: 17px;
+      margin: 25px 0 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat {
+      background: #151d30;
+      border: 1px solid #25314a;
+      padding: 17px;
+      border-radius: 17px;
+    }
+
+    .stat-icon { font-size: 23px; }
+    .stat-number { font-size: 26px; font-weight: 800; margin: 12px 0 5px; }
+    .stat-label { color: #9daac4; font-size: 13px; }
+
+    .menu { display: grid; gap: 12px; }
+
+    .menu button {
+      width: 100%;
+      border: 1px solid #29364f;
+      border-radius: 17px;
+      background: #151d30;
+      color: white;
+      padding: 17px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .menu button:active { transform: scale(.98); }
+
+    .menu-icon {
+      width: 45px;
+      height: 45px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .blue { background: #203d70; }
+    .green { background: #174d47; }
+    .purple { background: #432d67; }
+    .orange { background: #594027; }
+
+    .menu-text strong { display: block; margin-bottom: 5px; }
+    .menu-text small { color: #9daac4; font-size: 12px; }
+
+    .footer {
+      text-align: center;
+      color: #74819a;
+      font-size: 12px;
+      margin-top: 28px;
+    }
+
+    .notice {
+      display: none;
+      margin-top: 16px;
+      background: #1c2940;
+      padding: 16px;
+      border-radius: 14px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <div class="logo">ЭЛЕКТРО<span>ПОДРЯД</span></div>
+      <div class="badge">● Панель управления</div>
+    </header>
+
+    <section class="welcome">
+      <h1>Учёт предписаний</h1>
+      <p>Управляй предписаниями, фиксируй выполненные работы и храни отчёты в одном месте.</p>
+    </section>
+
+    <h2 class="section-title">Обзор</h2>
+
+    <section class="stats">
+      <div class="stat">
+        <div class="stat-icon">📥</div>
+        <div class="stat-number">—</div>
+        <div class="stat-label">Входящие предписания</div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon">✅</div>
+        <div class="stat-number">—</div>
+        <div class="stat-label">Выполненные</div>
+      </div>
+    </section>
+
+    <h2 class="section-title">Основные разделы</h2>
+
+    <section class="menu">
+      <button onclick="showSection('incoming')">
+        <span class="menu-icon blue">📋</span>
+        <span class="menu-text">
+          <strong>Предписания от УК</strong>
+          <small>Просмотр и регистрация новых предписаний</small>
+        </span>
+      </button>
+
+      <button onclick="showSection('completed')">
+        <span class="menu-icon green">🔧</span>
+        <span class="menu-text">
+          <strong>Исполненные предписания</strong>
+          <small>Работы, материалы и отчётность</small>
+        </span>
+      </button>
+
+      <button onclick="showSection('files')">
+        <span class="menu-icon purple">📁</span>
+        <span class="menu-text">
+          <strong>Excel-файлы</strong>
+          <small>Реестр входящих и исполненных работ</small>
+        </span>
+      </button>
+
+      <button onclick="showSection('companies')">
+        <span class="menu-icon orange">🏢</span>
+        <span class="menu-text">
+          <strong>Управляющие компании</strong>
+          <small>Центр, Горизонт и Северное</small>
+        </span>
+      </button>
+    </section>
+
+    <div id="notice" class="notice"></div>
+
+    <footer class="footer">
+      ЭлектроПодряд · Учёт электротехнических предписаний
+    </footer>
+  </main>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      tg.setHeaderColor('#0b1020');
+      tg.setBackgroundColor('#0b1020');
+    }
+
+    const messages = {
+      incoming: 'Раздел входящих предписаний. На следующем этапе подключим список предписаний из базы данных.',
+      completed: 'Раздел исполненных предписаний. Здесь можно будет выбрать исходное предписание и указать только материалы и выполненные работы.',
+      files: 'Здесь появятся ссылки на два Excel-файла: входящие и исполненные предписания.',
+      companies: 'Управляющие компании: УК Центр, УК Горизонт и УК Северное.'
+    };
+
+    function showSection(section) {
+      const notice = document.getElementById('notice');
+      notice.textContent = messages[section];
+      notice.style.display = 'block';
+      notice.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (tg) tg.HapticFeedback?.selectionChanged();
+    }
+  </script>
+</body>
+</html>
