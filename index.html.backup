@@ -1,0 +1,365 @@
+
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>ЭлектроПодряд — учёт предписаний</title>
+<style>
+:root{color-scheme:dark;--bg:#090e1b;--panel:#111a2d;--panel2:#17233a;--line:#283650;--text:#edf3ff;--muted:#96a7c2;--accent:#58e0b1;--blue:#78aaff;--danger:#ff7d8c}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#182846 0,#090e1b 52%);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+.app{max-width:1000px;margin:auto;padding:20px 16px 50px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:24px}
+.brand{font-size:21px;font-weight:850;letter-spacing:.2px}
+.brand span{color:var(--accent)}
+.sub{color:var(--muted);font-size:13px}
+.pill{border:1px solid #2c795f;color:var(--accent);border-radius:999px;padding:6px 10px;font-size:12px;white-space:nowrap}
+h1{font-size:clamp(25px,5vw,36px);line-height:1.15;margin:0 0 8px}
+.intro{color:var(--muted);margin:0 0 22px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:20px}
+.stat,.panel,.card{background:linear-gradient(145deg,#141f34,#0f1728);border:1px solid var(--line);border-radius:17px}
+.stat{padding:15px}.stat strong{display:block;font-size:25px}.stat span{color:var(--muted);font-size:12px}
+.panel{padding:16px;margin-bottom:16px}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:16px}
+.btn{border:1px solid var(--line);border-radius:11px;padding:10px 14px;background:var(--panel2);color:var(--text);font-weight:650}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#061a15}
+.btn.blue{border-color:#4265a0;color:#c7d9ff}
+.btn.danger{border-color:#70404b;color:#ffb2bc}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{flex:1;padding:11px;border:1px solid var(--line);background:#10182a;color:var(--muted);border-radius:11px}
+.tab.active{color:var(--accent);border-color:#3b9e7e;background:#10271f}
+.filters{display:grid;grid-template-columns:1fr 210px;gap:9px;margin-bottom:14px}
+input,textarea,select{width:100%;background:#0a1221;color:var(--text);border:1px solid #34425b;border-radius:10px;padding:11px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{min-height:90px;resize:vertical}
+label{display:block;font-size:13px;color:#c4d0e5;margin-bottom:6px}
+.field{margin-bottom:13px}
+.list{display:grid;gap:12px}
+.card{padding:15px}
+.cardtop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.card h3{margin:0 0 5px;font-size:17px;overflow-wrap:anywhere}
+.badge{font-size:11px;border-radius:999px;padding:4px 8px;background:#12372d;color:var(--accent);white-space:nowrap}
+.badge.pending{background:#332b1c;color:#ffd28b}
+.meta{color:var(--muted);font-size:12px;margin-bottom:10px}
+.detail{white-space:pre-wrap;overflow-wrap:anywhere;margin:9px 0}
+.cardactions{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.cardactions .btn{padding:8px 11px;font-size:13px}
+.empty,.loading{color:var(--muted);text-align:center;padding:30px 12px}
+.error{color:#ffabb5;background:#351c29;border:1px solid #693448;padding:11px;border-radius:10px;margin-bottom:12px;white-space:pre-wrap}
+.notice{color:var(--muted);font-size:12px;margin-top:8px}
+.hidden{display:none!important}
+.modal{position:fixed;inset:0;background:#020611d9;display:flex;align-items:center;justify-content:center;padding:14px;z-index:5;overflow:auto}
+.dialog{width:min(600px,100%);max-height:92dvh;overflow:auto;background:#111a2d;border:1px solid #3a4963;border-radius:18px;padding:19px}
+.dialog h2{margin:0 0 16px;font-size:22px}
+.dialoghead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:15px}
+.close{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:9px;padding:6px 11px}
+footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
+@media(max-width:560px){.app{padding:15px 11px 35px}.stats{gap:7px}.stat{padding:11px 9px}.stat strong{font-size:21px}.stat span{font-size:11px}.filters{grid-template-columns:1fr}.cardtop{gap:6px}.pill{font-size:11px}.panel{padding:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div><div class="brand">ЭЛЕКТРО<span>ПОДРЯД</span></div><div class="sub">Управление предписаниями</div></div>
+  <div class="pill" id="connection">Проверка API…</div>
+</header>
+<h1>Учёт предписаний</h1>
+<p class="intro">Входящие задачи, выполненные работы и отчётные документы — в одном месте.</p>
+
+<div class="stats">
+  <div class="stat"><strong id="incomingCount">—</strong><span>Входящие</span></div>
+  <div class="stat"><strong id="completedCount">—</strong><span>Выполненные</span></div>
+  <div class="stat"><strong id="ukCount">—</strong><span>Управляющие компании</span></div>
+</div>
+
+<div class="actions">
+  <button class="btn primary" id="newBtn">＋ Новое предписание</button>
+  <button class="btn blue" id="exportIncoming">↓ Excel входящих</button>
+  <button class="btn blue" id="exportCompleted">↓ Excel выполненных</button>
+  <button class="btn" id="refreshBtn">↻ Обновить</button>
+</div>
+
+<div class="panel">
+  <div class="tabs">
+    <button class="tab active" data-status="incoming">Входящие</button>
+    <button class="tab" data-status="completed">Выполненные</button>
+  </div>
+  <div class="filters">
+    <input id="search" placeholder="Поиск по номеру, адресу, комментарию…" autocomplete="off">
+    <select id="ukFilter"><option value="">Все УК</option></select>
+  </div>
+  <div id="error" class="error hidden"></div>
+  <div id="list" class="list"><div class="loading">Загружаем предписания…</div></div>
+</div>
+<footer>ЭлектроПодряд · Данные загружаются с сервера</footer>
+</div>
+
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="dialog">
+    <div class="dialoghead"><h2 id="modalTitle">Новое предписание</h2><button class="close" id="closeModal">Закрыть</button></div>
+    <div id="formError" class="error hidden"></div>
+    <form id="createForm">
+      <div class="field"><label for="newNumber">Номер предписания *</label><input id="newNumber" required maxlength="100"></div>
+      <div class="field"><label for="newUk">Управляющая компания *</label><select id="newUk" required></select></div>
+      <div class="field"><label for="newAddress">Адрес объекта *</label><input id="newAddress" required maxlength="500"></div>
+      <div class="field"><label for="newComment">Комментарий / суть предписания</label><textarea id="newComment" maxlength="10000"></textarea></div>
+      <button class="btn primary" type="submit" id="createSubmit">Создать предписание</button>
+    </form>
+    <form id="completeForm" class="hidden">
+      <p id="completeInfo" class="sub"></p>
+      <div class="field"><label for="workDone">Выполненные работы *</label><textarea id="workDone" required maxlength="20000" placeholder="Что было сделано, результат работ…"></textarea></div>
+      <div class="field"><label for="materials">Использованные материалы</label><textarea id="materials" maxlength="20000" placeholder="Наименование, количество…"></textarea></div>
+      <div class="field"><label for="photos">Фотографии выполненных работ</label><input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="notice">JPG, PNG или WEBP. Не более 15 МБ на запрос.</div></div>
+      <button class="btn primary" type="submit" id="completeSubmit">Сохранить результат</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const API = "https://pred.hqfree.online/api";
+  const $ = id => document.getElementById(id);
+  let status = "incoming", prescriptions = [], companies = [], activePrescription = null;
+  const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[ch]);
+  const dateText = value => {
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("ru-RU");
+  };
+  function showError(message) {
+    $("error").textContent = message;
+    $("error").classList.remove("hidden");
+  }
+  function clearError() {
+    $("error").classList.add("hidden");
+    $("error").textContent = "";
+  }
+  async function api(path, options = {}) {
+    let response;
+    try {
+      response = await fetch(API + path, options);
+    } catch (e) {
+      throw new Error("Не удалось связаться с API. Проверь интернет и доступность pred.hqfree.online.");
+    }
+    const type = response.headers.get("content-type") || "";
+    if (!response.ok) {
+      let message = `Ошибка сервера (${response.status})`;
+      if (type.includes("application/json")) {
+        const data = await response.json().catch(() => ({}));
+        if (data.error) message = data.error;
+      } else {
+        const body = await response.text().catch(() => "");
+        if (body) message += ": " + body.slice(0, 180);
+      }
+      throw new Error(message);
+    }
+    return type.includes("application/json") ? response.json() : response;
+  }
+  async function init() {
+    $("connection").textContent = "Подключение…";
+    try {
+      const results = await Promise.all([
+        api("/health"), api("/uk")
+      ]);
+      companies = results[1];
+      $("connection").textContent = "API подключён";
+      $("connection").style.borderColor = "#2c795f";
+      $("ukCount").textContent = companies.length;
+      const options = companies.map(name =>
+        `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+      $("newUk").innerHTML = options;
+      $("ukFilter").innerHTML = '<option value="">Все УК</option>' + options;
+      await refresh();
+    } catch (e) {
+      $("connection").textContent = "Нет связи";
+      showError(e.message);
+      $("list").innerHTML = '<div class="empty">Не удалось загрузить данные. Нажми «Обновить».</div>';
+    }
+  }
+  async function refresh() {
+    clearError();
+    $("list").innerHTML = '<div class="loading">Загружаем…</div>';
+    try {
+      const [incoming, completed, current] = await Promise.all([
+        api("/prescriptions?status=incoming"),
+        api("/prescriptions?status=completed"),
+        api("/prescriptions?status=" + status)
+      ]);
+      $("incomingCount").textContent = incoming.length;
+      $("completedCount").textContent = completed.length;
+      prescriptions = current;
+      render();
+    } catch (e) {
+      showError(e.message);
+      $("list").innerHTML = '<div class="empty">Не удалось загрузить список.</div>';
+    }
+  }
+  function render() {
+    const term = $("search").value.trim().toLocaleLowerCase("ru");
+    const uk = $("ukFilter").value;
+    const rows = prescriptions.filter(p => {
+      const text = [p.number,p.address,p.comment,p.uk_name,p.work_done,p.materials]
+        .join(" ").toLocaleLowerCase("ru");
+      return (!term || text.includes(term)) && (!uk || p.uk_name === uk);
+    });
+    if (!rows.length) {
+      $("list").innerHTML = `<div class="empty">${prescriptions.length ? "По фильтру ничего не найдено." : status === "incoming" ? "Входящих предписаний пока нет. Создай первое кнопкой выше." : "Выполненных предписаний пока нет."}</div>`;
+      return;
+    }
+    $("list").innerHTML = rows.map(p => {
+      const files = (p.attachments || []).map(a => {
+        const label = a.file_type === "photo" ? "Фото" : "PDF-файл";
+        return `<button class="btn" data-attachment="${Number(a.id)}">↗ ${label} #${Number(a.id)}</button>`;
+      }).join("");
+      return `<article class="card">
+        <div class="cardtop"><div><h3>№ ${escapeHtml(p.number)}</h3><div class="meta">${escapeHtml(p.uk_name)} · Создано: ${escapeHtml(dateText(p.created_at))}</div></div>
+        <span class="badge ${p.is_completed ? "" : "pending"}">${p.is_completed ? "Выполнено" : "В работе"}</span></div>
+        <div class="detail"><strong>Адрес:</strong> ${escapeHtml(p.address)}</div>
+        ${p.comment ? `<div class="detail"><strong>Предписание:</strong><br>${escapeHtml(p.comment)}</div>` : ""}
+        ${p.is_completed ? `<div class="detail"><strong>Выполненные работы:</strong><br>${escapeHtml(p.work_done || "—")}</div><div class="detail"><strong>Материалы:</strong><br>${escapeHtml(p.materials || "—")}</div>` : ""}
+        ${files ? `<div class="cardactions">${files}</div>` : ""}
+        <div class="cardactions">
+          ${!p.is_completed ? `<button class="btn primary" data-complete="${Number(p.id)}">✓ Завершить работы</button>` : `<button class="btn primary" data-pdf="${Number(p.id)}">↓ Карточка PDF</button>`}
+        </div>
+      </article>`;
+    }).join("");
+  }
+  function openCreate() {
+    activePrescription = null;
+    $("modalTitle").textContent = "Новое предписание";
+    $("createForm").classList.remove("hidden");
+    $("completeForm").classList.add("hidden");
+    $("formError").classList.add("hidden");
+    $("createForm").reset();
+    $("modal").classList.remove("hidden");
+  }
+  function openComplete(p) {
+    activePrescription = p;
+    $("modalTitle").textContent = "Завершение работ";
+    $("completeInfo").textContent = `Предписание № ${p.number} · ${p.uk_name} · ${p.address}`;
+    $("createForm").classList.add("hidden");
+    $("completeForm").classList.remove("hidden");
+    $("formError").classList.add("hidden");
+    $("completeForm").reset();
+    $("modal").classList.remove("hidden");
+  }
+  function closeModal() { $("modal").classList.add("hidden"); }
+  function formError(message) {
+    $("formError").textContent = message;
+    $("formError").classList.remove("hidden");
+  }
+  async function download(path, filename) {
+    try {
+      const response = await api(path);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch (e) { showError(e.message); }
+  }
+  $("newBtn").addEventListener("click", openCreate);
+  $("closeModal").addEventListener("click", closeModal);
+  $("modal").addEventListener("click", e => { if (e.target === $("modal")) closeModal(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+  $("refreshBtn").addEventListener("click", refresh);
+  $("search").addEventListener("input", render);
+  $("ukFilter").addEventListener("change", render);
+  document.querySelectorAll("[data-status]").forEach(button => button.addEventListener("click", () => {
+    status = button.dataset.status;
+    document.querySelectorAll("[data-status]").forEach(b => b.classList.toggle("active", b === button));
+    refresh();
+  }));
+  $("exportIncoming").addEventListener("click", () => download("/export/incoming", "vkhodyashchie_predpisaniya.xlsx"));
+  $("exportCompleted").addEventListener("click", () => download("/export/completed", "vypolnennye_predpisaniya.xlsx"));
+  $("createForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const button = $("createSubmit");
+    button.disabled = true;
+    try {
+      await api("/prescriptions", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          number: $("newNumber").value.trim(),
+          uk_name: $("newUk").value,
+          address: $("newAddress").value.trim(),
+          comment: $("newComment").value.trim()
+        })
+      });
+      closeModal(); status = "incoming";
+      document.querySelectorAll("[data-status]").forEach(b => b.classList.toggle("active", b.dataset.status === status));
+      $("search").value = ""; $("ukFilter").value = "";
+      await refresh();
+    } catch (err) { formError(err.message); }
+    finally { button.disabled = false; }
+  });
+  $("completeForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!activePrescription) return;
+    const button = $("completeSubmit");
+    button.disabled = true;
+    try {
+      const result = await api(`/prescriptions/${activePrescription.id}/complete`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          work_done: $("workDone").value.trim(),
+          materials: $("materials").value.trim()
+        })
+      });
+      const files = Array.from($("photos").files || []);
+      for (const file of files) {
+        const ext = file.name.split(".").pop().toLowerCase();
+        if (!["jpg","jpeg","png","webp"].includes(ext)) {
+          throw new Error(`Недопустимый формат файла: ${file.name}`);
+        }
+        const data = new FormData();
+        data.append("file", file);
+        data.append("file_type", "photo");
+        await api(`/prescriptions/${activePrescription.id}/attachments`, {method:"POST",body:data});
+      }
+      closeModal();
+      status = "completed";
+      document.querySelectorAll("[data-status]").forEach(b => b.classList.toggle("active", b.dataset.status === status));
+      await refresh();
+      if (!files.length) {
+        showError("");
+        $("error").classList.add("hidden");
+      }
+    } catch (err) {
+      formError("Работы могли сохраниться, даже если загрузка фотографии завершилась ошибкой. Обнови список перед повторной попыткой. " + err.message);
+    } finally { button.disabled = false; }
+  });
+  $("list").addEventListener("click", async e => {
+    const complete = e.target.closest("[data-complete]");
+    const pdf = e.target.closest("[data-pdf]");
+    const attachment = e.target.closest("[data-attachment]");
+    if (complete) {
+      const p = prescriptions.find(item => item.id === Number(complete.dataset.complete));
+      if (p) openComplete(p);
+    }
+    if (pdf) {
+      await download(`/prescriptions/${pdf.dataset.pdf}/pdf`, `predpisanie_${pdf.dataset.pdf}.pdf`);
+    }
+    if (attachment) {
+      await download(`/attachments/${attachment.dataset.attachment}`, `attachment_${attachment.dataset.attachment}`);
+    }
+  });
+  init();
+})();
+</script>
+</body>
+</html>
+
+
+
