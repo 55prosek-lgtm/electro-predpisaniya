@@ -78,6 +78,7 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
 
 <div class="actions">
   <button class="btn primary" id="newBtn">＋ Новое предписание</button>
+  <button class="btn" id="manageUkBtn">⚙ Управление УК</button>
   <button class="btn blue" id="exportIncoming">↓ Excel входящих</button>
   <button class="btn blue" id="exportCompleted">↓ Excel выполненных</button>
   <button class="btn" id="refreshBtn">↻ Обновить</button>
@@ -116,6 +117,26 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
       <div class="field"><label for="photos">Фотографии выполненных работ</label><input id="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="notice">JPG, PNG или WEBP. Не более 15 МБ на запрос.</div></div>
       <button class="btn primary" type="submit" id="completeSubmit">Сохранить результат</button>
     </form>
+  </div>
+</div>
+
+
+<div id="ukModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="ukModalTitle">
+  <div class="dialog">
+    <div class="dialoghead">
+      <h2 id="ukModalTitle">Управление УК</h2>
+      <button class="close" id="closeUkModal" type="button">Закрыть</button>
+    </div>
+    <div id="ukError" class="error hidden"></div>
+    <form id="addUkForm">
+      <div class="field">
+        <label for="ukNameInput">Название новой управляющей компании</label>
+        <input id="ukNameInput" maxlength="100" required placeholder="Например, УК Южная">
+      </div>
+      <button class="btn primary" id="addUkSubmit" type="submit">＋ Добавить УК</button>
+    </form>
+    <h3>Существующие компании</h3>
+    <div id="ukManageList" class="list">Загрузка списка…</div>
   </div>
 </div>
 
@@ -266,10 +287,132 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
       setTimeout(() => URL.revokeObjectURL(url), 1500);
     } catch (e) { showError(e.message); }
   }
+
+  function showUkError(message) {
+    $("ukError").textContent = message;
+    $("ukError").classList.remove("hidden");
+  }
+  function clearUkError() {
+    $("ukError").textContent = "";
+    $("ukError").classList.add("hidden");
+  }
+  function updateCompanyOptions() {
+    const selectedNew = $("newUk").value;
+    const selectedFilter = $("ukFilter").value;
+    const options = companies.map(name =>
+      `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+    ).join("");
+    $("newUk").innerHTML = options;
+    $("ukFilter").innerHTML = '<option value="">Все УК</option>' + options;
+    if (companies.includes(selectedNew)) $("newUk").value = selectedNew;
+    if (companies.includes(selectedFilter)) $("ukFilter").value = selectedFilter;
+    $("ukCount").textContent = companies.length;
+    render();
+  }
+  async function loadUkManagement() {
+    clearUkError();
+    $("ukManageList").textContent = "Загрузка списка…";
+    try {
+      companies = await api("/uk");
+      updateCompanyOptions();
+      if (!companies.length) {
+        $("ukManageList").innerHTML = '<div class="empty">Компаний пока нет.</div>';
+        return;
+      }
+      $("ukManageList").innerHTML = companies.map(name => `
+        <div class="uk-manage-row" style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--border,#ddd)">
+          <span style="overflow-wrap:anywhere;flex:1">${escapeHtml(name)}</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn" type="button" data-uk-rename="${escapeHtml(name)}">Переименовать</button>
+            <button class="btn" type="button" data-uk-delete="${escapeHtml(name)}">Удалить</button>
+          </div>
+        </div>
+      `).join("");
+    } catch (e) {
+      $("ukManageList").textContent = "Не удалось загрузить компании.";
+      showUkError(e.message);
+    }
+  }
+  async function addUk(name) {
+    await api("/uk", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({name})
+    });
+    await loadUkManagement();
+    await refresh();
+  }
+  $("manageUkBtn").addEventListener("click", async () => {
+    $("ukModal").classList.remove("hidden");
+    await loadUkManagement();
+  });
+  $("closeUkModal").addEventListener("click", () => $("ukModal").classList.add("hidden"));
+  $("ukModal").addEventListener("click", e => {
+    if (e.target === $("ukModal")) $("ukModal").classList.add("hidden");
+  });
+  $("addUkForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const input = $("ukNameInput");
+    const button = $("addUkSubmit");
+    const name = input.value.trim();
+    if (!name) return;
+    button.disabled = true;
+    clearUkError();
+    try {
+      await addUk(name);
+      input.value = "";
+    } catch (err) {
+      showUkError(err.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+  $("ukManageList").addEventListener("click", async e => {
+    const renameButton = e.target.closest("[data-uk-rename]");
+    const deleteButton = e.target.closest("[data-uk-delete]");
+    if (!renameButton && !deleteButton) return;
+    clearUkError();
+    if (renameButton) {
+      const oldName = renameButton.dataset.ukRename;
+      const newName = prompt("Новое название компании:", oldName);
+      if (newName === null) return;
+      if (!newName.trim()) {
+        showUkError("Название не должно быть пустым.");
+        return;
+      }
+      try {
+        await api("/uk", {
+          method: "PATCH",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({old_name: oldName, new_name: newName.trim()})
+        });
+        await loadUkManagement();
+        await refresh();
+      } catch (err) {
+        showUkError(err.message);
+      }
+    }
+    if (deleteButton) {
+      const name = deleteButton.dataset.ukDelete;
+      if (!confirm(`Удалить компанию «${name}»?`)) return;
+      try {
+        await api("/uk", {
+          method: "DELETE",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({name})
+        });
+        await loadUkManagement();
+        await refresh();
+      } catch (err) {
+        showUkError(err.message);
+      }
+    }
+  });
+
   $("newBtn").addEventListener("click", openCreate);
   $("closeModal").addEventListener("click", closeModal);
   $("modal").addEventListener("click", e => { if (e.target === $("modal")) closeModal(); });
-  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModal(); $("ukModal").classList.add("hidden"); } });
   $("refreshBtn").addEventListener("click", refresh);
   $("search").addEventListener("input", render);
   $("ukFilter").addEventListener("change", render);
