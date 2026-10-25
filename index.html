@@ -247,6 +247,7 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
         ${p.is_completed ? `<div class="detail"><strong>Выполненные работы:</strong><br>${escapeHtml(p.work_done || "—")}</div><div class="detail"><strong>Материалы:</strong><br>${escapeHtml(p.materials || "—")}</div>` : ""}
         ${files ? `<div class="cardactions">${files}</div>` : ""}
         <div class="cardactions">
+          <button class="btn" data-edit="${Number(p.id)}">✏️ Редактировать</button>
           ${!p.is_completed ? `<button class="btn primary" data-complete="${Number(p.id)}">✓ Завершить работы</button>` : `<button class="btn primary" data-pdf="${Number(p.id)}">↓ Карточка PDF</button>`}
         </div>
       </article>`;
@@ -255,10 +256,24 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
   function openCreate() {
     activePrescription = null;
     $("modalTitle").textContent = "Новое предписание";
+    $("createSubmit").textContent = "Создать предписание";
     $("createForm").classList.remove("hidden");
     $("completeForm").classList.add("hidden");
     $("formError").classList.add("hidden");
     $("createForm").reset();
+    $("modal").classList.remove("hidden");
+  }
+  function openEdit(p) {
+    activePrescription = p;
+    $("modalTitle").textContent = "Редактирование предписания";
+    $("createForm").classList.remove("hidden");
+    $("completeForm").classList.add("hidden");
+    $("formError").classList.add("hidden");
+    $("newNumber").value = p.number || "";
+    $("newUk").value = p.uk_name || "";
+    $("newAddress").value = p.address || "";
+    $("newComment").value = p.comment || "";
+    $("createSubmit").textContent = "Сохранить изменения";
     $("modal").classList.remove("hidden");
   }
   function openComplete(p) {
@@ -428,8 +443,9 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
     const button = $("createSubmit");
     button.disabled = true;
     try {
-      await api("/prescriptions", {
-        method: "POST",
+      const editing = activePrescription !== null;
+      await api(editing ? `/prescriptions/${activePrescription.id}` : "/prescriptions", {
+        method: editing ? "PATCH" : "POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
           number: $("newNumber").value.trim(),
@@ -438,7 +454,10 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
           comment: $("newComment").value.trim()
         })
       });
-      closeModal(); status = "incoming";
+      activePrescription = null;
+      $("createSubmit").textContent = "Создать предписание";
+      closeModal();
+      if (!editing) status = "incoming";
       document.querySelectorAll("[data-status]").forEach(b => b.classList.toggle("active", b.dataset.status === status));
       $("search").value = ""; $("ukFilter").value = "";
       await refresh();
@@ -484,6 +503,12 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
   });
   $("list").addEventListener("click", async e => {
     const complete = e.target.closest("[data-complete]");
+    const edit = e.target.closest("[data-edit]");
+    if (edit) {
+      const p = prescriptions.find(item => Number(item.id) === Number(edit.dataset.edit));
+      if (p) openEdit(p);
+      return;
+    }
     const pdf = e.target.closest("[data-pdf]");
     const attachment = e.target.closest("[data-attachment]");
     if (complete) {
