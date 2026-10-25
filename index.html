@@ -248,6 +248,7 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
         ${files ? `<div class="cardactions">${files}</div>` : ""}
         <div class="cardactions">
           <button class="btn" data-edit="${Number(p.id)}">✏️ Редактировать</button>
+          <button class="btn" data-delete="${Number(p.id)}" style="border-color:#b84b4b;color:#e06b6b">🗑 Удалить</button>
           ${!p.is_completed ? `<button class="btn primary" data-complete="${Number(p.id)}">✓ Завершить работы</button>` : `<button class="btn primary" data-pdf="${Number(p.id)}">↓ Карточка PDF</button>`}
         </div>
       </article>`;
@@ -503,7 +504,33 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
   });
   $("list").addEventListener("click", async e => {
     const complete = e.target.closest("[data-complete]");
+    const remove = e.target.closest("[data-delete]");
     const edit = e.target.closest("[data-edit]");
+
+    if (remove) {
+      const p = prescriptions.find(item => Number(item.id) === Number(remove.dataset.delete));
+      if (!p) {
+        alert("Предписание не найдено в текущем списке. Обнови страницу.");
+        return;
+      }
+      const confirmed = confirm(
+        `Удалить предписание № ${p.number}?\n\n` +
+        `${p.uk_name}\n${p.address}\n\n` +
+        "Будут удалены предписание, данные о выполнении и вложения. Отменить это действие нельзя."
+      );
+      if (!confirmed) return;
+
+      remove.disabled = true;
+      try {
+        await api(`/prescriptions/${Number(p.id)}`, { method: "DELETE" });
+        await refresh();
+        alert(`Предписание № ${p.number} удалено.`);
+      } catch (err) {
+        alert("Не удалось удалить предписание: " + err.message);
+        remove.disabled = false;
+      }
+      return;
+    }
     if (edit) {
       const p = prescriptions.find(item => Number(item.id) === Number(edit.dataset.edit));
       if (p) openEdit(p);
