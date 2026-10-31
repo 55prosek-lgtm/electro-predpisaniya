@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1020">
-<title>ЭлектроПодряд — учёт предписаний</title>
+<title>ГарантТехСтрой — учёт предписаний</title>
 <style>
 :root{color-scheme:dark;--bg:#090e1b;--panel:#111a2d;--panel2:#17233a;--line:#283650;--text:#edf3ff;--muted:#96a7c2;--accent:#58e0b1;--blue:#78aaff;--danger:#ff7d8c}
 *{box-sizing:border-box}
@@ -64,7 +64,7 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
 <body>
 <div class="app">
 <header>
-  <div><div class="brand">ЭЛЕКТРО<span>ПОДРЯД</span></div><div class="sub">Управление предписаниями</div></div>
+  <div><div class="brand">Гарант<span>ТехСтрой</span></div><div class="sub">Управление предписаниями</div></div>
   <div class="pill" id="connection">Проверка API…</div>
 </header>
 <h1>Учёт предписаний</h1>
@@ -96,7 +96,7 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
   <div id="error" class="error hidden"></div>
   <div id="list" class="list"><div class="loading">Загружаем предписания…</div></div>
 </div>
-<footer>ЭлектроПодряд · Данные загружаются с сервера</footer>
+<footer>ГарантТехСтрой · Данные загружаются с сервера</footer>
 </div>
 
 <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -119,7 +119,6 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
     </form>
   </div>
 </div>
-
 
 <div id="ukModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="ukModalTitle">
   <div class="dialog">
@@ -249,8 +248,8 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
         <div class="cardactions">
           <button class="btn" data-edit="${Number(p.id)}">✏️ Редактировать</button>
           <button class="btn" data-delete="${Number(p.id)}" style="border-color:#b84b4b;color:#e06b6b">🗑 Удалить</button>
-          
-          ${!p.is_completed ? `<button class="btn primary" data-complete="${Number(p.id)}">✓ Завершить работы</button><button class="btn primary" data-pdf="${Number(p.id)}">↓ Скачать карточку</button>` : `<button class="btn primary" data-pdf="${Number(p.id)}">↓ Карточка PDF</button>`}
+
+          ${!p.is_completed ? `<button class="btn primary" data-complete="${Number(p.id)}">✓ Завершить работы</button><button class="btn primary" data-pdf="${Number(p.id)}">↓ Скачать карточку</button>` : `<button class="btn primary" data-pdf="${Number(p.id)}">↓ Скачать карточку</button>`}
 
         </div>
       </article>`;
