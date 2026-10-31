@@ -120,6 +120,7 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
   </div>
 </div>
 
+
 <div id="ukModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="ukModalTitle">
   <div class="dialog">
     <div class="dialoghead">
@@ -545,13 +546,11 @@ footer{color:#647693;font-size:12px;text-align:center;margin-top:25px}
     }
     if (pdf) {
       const prescription = prescriptions.find(item => Number(item.id) === Number(pdf.dataset.pdf));
-      let filename;
-      if (prescription && !prescription.is_completed) {
-        const number = String(prescription.number || prescription.id).replace(/^№\s*/, "").trim().replace(/[\\/:*?"<>|]/g, "_");
-        filename = `№-${number}.pdf`;
-      } else {
-        filename = `predpisanie_${pdf.dataset.pdf}.pdf`;
-      }
+      const number = String(prescription?.number || pdf.dataset.pdf)
+        .replace(/^№\s*/, "")
+        .trim()
+        .replace(/[\\/:*?"<>|]/g, "_");
+      const filename = `№-${number}.pdf`;
       await download(`/prescriptions/${pdf.dataset.pdf}/pdf`, filename);
     }
     if (attachment) {
